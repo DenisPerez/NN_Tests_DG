@@ -16,7 +16,7 @@ class CyclicLRGiselt_Denis(_LRScheduler):
             para cada grupo de parámetros. Funcionalmente,
             define la amplitud del ciclo (max_lr - base_lr).
             La lr en cualquier ciclo es la suma de base_lr
-            y algún escalado de la amplitud; por lo tanto
+    y algún escalado de la amplitud; por lo tanto
             max_lr puede no alcanzarse realmente dependiendo de
             función de escalado.
         step_size_up (int): Número de iteraciones de entrenamiento en la
@@ -35,7 +35,6 @@ class CyclicLRGiselt_Denis(_LRScheduler):
             total de *lotes* calculados, no el número total de épocas calculadas.
             Cuando last_epoch=-1, el programa se inicia desde el principio.
             Por defecto: -1
-
     Example:
         >>> # xdoctest: +SKIP
         >>> optimizer = torch.optim.SGD(model.parameters(), lr=0.1, momentum=0.9)
@@ -65,12 +64,8 @@ class CyclicLRGiselt_Denis(_LRScheduler):
         self.direction_up = True
         self.half_cycle_steps = 0
 
-        base_lrs = self._format_param('base_lr', optimizer, base_lr)
-        if last_epoch == -1:
-            for lr, group in zip(base_lrs, optimizer.param_groups):
-                group['lr'] = lr
-
-        self.max_lrs = self._format_param('max_lr', optimizer, max_lr)
+        self.base_lr = base_lr
+        self.max_lr = max_lr
 
         self.step_size_up = float(step_size_up)
         self.step_size_down = float(step_size_down) if step_size_down is not None else step_size_up
@@ -78,52 +73,43 @@ class CyclicLRGiselt_Denis(_LRScheduler):
         self.scale_mode = scale_mode
 
         super(CyclicLRGiselt_Denis, self).__init__(optimizer, last_epoch)
-        self.base_lrs = base_lrs
-
-    def _format_param(self, name, optimizer, param):
-        if isinstance(param, (list, tuple)):
-            if len(param) != len(optimizer.param_groups):
-                raise ValueError("expected {} values for {}, got {}".format(
-                    len(optimizer.param_groups), name, len(param)))
-            return param
-        else:
-            return [param] * len(optimizer.param_groups)
 
     def get_lr(self):
         lrs = []
-        for base_lr, max_lr in zip(self.base_lrs, self.max_lrs):
-            if self.scale_mode == 'decrecimiento':
-                if (self.last_epoch == 0):
-                  lr = max_lr
-                else: 
-                  lr = self.get_last_lr()[0] - base_lr
-                  if (lr<0):
-                    lr = base_lr
+        if self.scale_mode == 'decrecimiento':
+            if (self.last_epoch == 0):
+                lr = self.max_lr
+            else: 
+                lr = self.get_last_lr()[0] - self.base_lr
+                if (lr<0):
+                    lr = self.base_lr
 
-            elif self.scale_mode == 'chipichipi':
-                if (self.last_epoch == 0):
-                    last_lr = base_lr
-                else:
-                    last_lr = self.get_last_lr()[0]
+        elif self.scale_mode == 'chipichipi':
+            if (self.last_epoch == 0):
+                last_lr = self.base_lr
+                
+            else:
+                last_lr = self.get_last_lr()[0]
 
-                if (self.half_cycle_steps == self.step_size_up
-                    and self.direction_up == True):
-                    lr = random.uniform(last_lr, max_lr)
-                    self.direction_up = False
-                    self.half_cycle_steps = 1
+            if (self.half_cycle_steps == self.step_size_up
+                and self.direction_up == True):
+                lr = random.uniform(last_lr, self.max_lr)
+                self.direction_up = False
+                self.half_cycle_steps = 1
 
-                elif (self.half_cycle_steps == self.step_size_down
-                    and self.direction_up == False):
-                    lr = random.uniform(base_lr, last_lr)
-                    self.direction_up = True
-                    self.half_cycle_steps = 1
+            elif (self.half_cycle_steps == self.step_size_down
+                and self.direction_up == False):
+                lr = random.uniform(self.base_lr, last_lr)
+                self.direction_up = True
+                self.half_cycle_steps = 1
 
-                elif (self.direction_up == True):
-                    lr = random.uniform(last_lr, max_lr)
-                    self.half_cycle_steps += 1
+            elif (self.direction_up == True):
+                lr = random.uniform(last_lr, self.max_lr)
+                self.half_cycle_steps += 1
 
-                elif(self.direction_up == False):
-                    lr = random.uniform(base_lr, last_lr)
-                    self.half_cycle_steps += 1
-            lrs.append(lr)
+            elif(self.direction_up == False):
+                lr = random.uniform(self.base_lr, last_lr)
+                self.half_cycle_steps += 1
+
+        lrs.append(lr)
         return lrs
