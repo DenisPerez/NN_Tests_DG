@@ -149,7 +149,6 @@ class CyclicLRGiselt_Denis(_LRScheduler):
                 self.max_lr = temp_maxlr if temp_maxlr > self.base_lr else self.orig_max_lr
                 self.direction_up = False
                 self.half_cycle_steps = 1
-                print(f"Proximo maxLR {self.max_lr}")
 
             elif (self.half_cycle_steps == self.step_size_down
                 and self.direction_up == False):
