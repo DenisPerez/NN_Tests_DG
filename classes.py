@@ -5,22 +5,15 @@ import random
 class CyclicLRGiselt_Denis(_LRScheduler):
     r"""Establece la tasa de aprendizaje de cada grupo de parámetros según
     política de tasa de aprendizaje cíclica aleatoria. La politica intercambia valores en una frecuencia aleatoria entre
-    
     un minimo y un maximo. Esta politica de tasa de aprendizaja actualiza el Learning Rate despues de cada Epoch
 
     Argumentos:
         optimizer (Optimizer): Wrapped optimizer.
-        base_lr (float or list): Tasa de aprendizaje inicial que es el
-            límite inferior del ciclo para cada grupo de parámetros..
-        max_lr (float or list): Límites superiores de la tasa de aprendizaje en el ciclo
-            para cada grupo de parámetros. Funcionalmente,
-            define la amplitud del ciclo (max_lr - base_lr).
-            La lr en cualquier ciclo es la suma de base_lr
-    y algún escalado de la amplitud; por lo tanto
-            max_lr puede no alcanzarse realmente dependiendo de
-            función de escalado.
+        base_lr (float): Tasa de aprendizaje inicial que es el
+            límite inferior del ciclo
+        max_lr (float): Límites superiores de la tasa de aprendizaje en el ciclo.
         step_size_up (int): Número de iteraciones de entrenamiento en la
-            mitad creciente de un ciclo. Por defecto: 2000
+            mitad creciente de un ciclo
         step_size_down (int): Número de iteraciones de entrenamiento en la
             mitad decreciente de un ciclo. Si step_size_down es None,
             se establece en step_size_up. Por defecto: None
@@ -61,11 +54,13 @@ class CyclicLRGiselt_Denis(_LRScheduler):
                 type(optimizer).__name__))
         self.optimizer = optimizer
         
+        self.extended_const = 1e-3
+        self.decrement_const = 1e-1
         self.direction_up = True
         self.half_cycle_steps = 0
 
         self.base_lr = base_lr
-        self.max_lr = max_lr
+        self.max_lr = self.orig_max_lr = max_lr
 
         self.step_size_up = float(step_size_up)
         self.step_size_down = float(step_size_down) if step_size_down is not None else step_size_up
@@ -111,5 +106,64 @@ class CyclicLRGiselt_Denis(_LRScheduler):
                 lr = random.uniform(self.base_lr, last_lr)
                 self.half_cycle_steps += 1
 
+        elif self.scale_mode == 'extendido':
+            if (self.last_epoch == 0):
+                last_lr = self.base_lr
+                
+            else:
+                last_lr = self.get_last_lr()[0]
+
+            if (self.half_cycle_steps == self.step_size_up + 1
+                and self.direction_up == True):
+                lr = random.uniform(last_lr, self.max_lr + self.extended_const)
+                self.direction_up = False
+                self.half_cycle_steps = 1
+
+            elif (self.half_cycle_steps == self.step_size_down + 1
+                and self.direction_up == False):
+
+                lr = random.uniform(self.base_lr - self.extended_const, last_lr)
+                self.direction_up = True
+                self.half_cycle_steps = 1
+
+            elif (self.direction_up == True):
+                lr = random.uniform(last_lr, self.max_lr)
+                self.half_cycle_steps += 1
+
+            elif(self.direction_up == False):
+                lr = random.uniform(self.base_lr, last_lr)
+                self.half_cycle_steps += 1
+        
+        elif self.scale_mode == 'decrementar_maximo':
+            if (self.last_epoch == 0):
+                last_lr = self.base_lr
+                
+            else:
+                last_lr = self.get_last_lr()[0]
+
+            if (self.half_cycle_steps == self.step_size_up
+                and self.direction_up == True):
+
+                lr = random.uniform(last_lr, self.max_lr)
+                temp_maxlr = self.max_lr - self.decrement_const
+                self.max_lr = temp_maxlr if temp_maxlr > self.base_lr else self.orig_max_lr
+                self.direction_up = False
+                self.half_cycle_steps = 1
+                print(f"Proximo maxLR {self.max_lr}")
+
+            elif (self.half_cycle_steps == self.step_size_down
+                and self.direction_up == False):
+
+                lr = random.uniform(self.base_lr, last_lr)
+                self.direction_up = True
+                self.half_cycle_steps = 1
+
+            elif (self.direction_up == True):
+                lr = random.uniform(last_lr, self.max_lr)
+                self.half_cycle_steps += 1
+
+            elif(self.direction_up == False):
+                lr = random.uniform(self.base_lr, last_lr)
+                self.half_cycle_steps += 1
         lrs.append(lr)
         return lrs
