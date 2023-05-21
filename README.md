@@ -25,15 +25,9 @@ El repositorio está estructurado de la siguiente manera:
 | resultados/Experimento3/Old/ | Carpeta con los primeros resultados del entrenamiento de Experimento 3 |
 | Pruebas_LR/ | Carpeta con imágenes de pruebas utilizadas para la tesis| requirements.txt | Archivo que contiene las librerías utilizadas en la tesis |
 
-Estas librerías pueden ser instaladas usando el archivo "requirements.txt" incluido en este repositorio.
-
 ## Uso
 
-Para utilizar el código en este repositorio, se recomienda clonar el repositorio y ejecutar los Jupyter Notebooks en la carpeta "resultados". Los datos utilizados en la tesis se encuentran en la carpeta "Dataset", y los modelos implementados se encuentran en cada una de las carpetas de resultados correspondientes a cada experimento. Las imágenes de las gráficas de costo y exactitud, así como las matrices de confusión, se encuentran en las subcarpetas de cada experimento.
-
-## Contribuciones
-
-Este repositorio fue creado para la realización de una tesis especial de grado, por lo que no se aceptarán contribuciones externas.
+Para utilizar el código en este repositorio, se recomienda clonar el repositorio y ejecutar los Jupyter Notebooks en la carpeta. Los datos utilizados en la tesis se encuentran en la carpeta "Dataset", y los modelos implementados se encuentran en los jupyter notebooks de los experimentos. Las imágenes de las gráficas de costo y exactitud, así como las matrices de confusión, se encuentran en las subcarpetas de cada experimento.
 
 ## Autores
 
